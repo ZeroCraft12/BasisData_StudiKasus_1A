@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusBike Enterprise • Fleet Operations & Database Sandbox</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b',
+            },
+            corp: {
+              950: '#07090e',
+              900: '#0d111a',
+              850: '#121824',
+              800: '#182030',
+              750: '#1e283d',
+              700: '#26334d',
+              border: '#202b3f',
+              muted: '#64748b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(13, 17, 26, 0.8);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #26334d;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b4d70;
+    }
+
+    /* Subtle Enterprise Grid */
+    .bg-grid-enterprise {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+
+    /* Range Thumb */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      background: #10b981;
+      cursor: pointer;
+      border: 3px solid #0d111a;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+      transition: transform 0.15s ease, background-color 0.15s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      background: #34d399;
+    }
+
+    /* Tabular Numbers */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Animated Map Route Stroke */
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -40;
+      }
+    }
+    .route-active {
+      stroke-dasharray: 6 4;
+      animation: dash 1.5s linear infinite;
+    }
+    .route-reroute {
+      stroke-dasharray: 4 4;
+      animation: dash 0.8s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-corp-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300 antialiased bg-grid-enterprise">
+
+  <!-- ================= TOP ENTERPRISE APP HEADER ================= -->
+  <header class="border-b border-corp-border/80 bg-corp-900/90 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Left: Brand & Hierarchy Breadcrumb -->
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-emerald-500/20">
+              <svg class="w-5 h-5 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                <circle cx="5.5" cy="17.5" r="3.5"/>
+                <circle cx="18.5" cy="17.5" r="3.5"/>
+                <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h4"/>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-white tracking-tight">CAMPUSBIKE</span>
+                <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold tracking-wider">Enterprise Ops</span>
+              </div>
+              <p class="text-[11px] text-slate-400 hidden sm:block">Fleet Telemetry & Relational RDBMS Simulator</p>
+            </div>
+          </div>
+
+          <div class="hidden md:flex items-center gap-2 pl-4 border-l border-corp-border text-xs text-slate-400">
+            <span class="text-slate-500">Zone:</span>
+            <span class="font-medium text-slate-300 bg-corp-850 px-2 py-0.5 rounded border border-corp-border">Central Campus • Hub 01</span>
+          </div>
+        </div>
+
+        <!-- Center: System Status & Parity Switcher -->
+        <div class="hidden lg:flex items-center gap-3">
+          <!-- Live NIM Status Indicator -->
+          <div class="flex items-center gap-2 bg-corp-850 border border-corp-border rounded-xl px-3 py-1.5 text-xs font-mono">
+            <span class="text-slate-500 font-sans text-[11px]">NIM Test:</span>
+            <span id="header-nim-display" class="font-bold text-emerald-400">230101001</span>
+            <span id="header-parity-badge" class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[10px] uppercase font-bold">Ganjil</span>
+            <button onclick="toggleQuickNim()" class="ml-1 text-slate-400 hover:text-white transition-colors" title="Beralih NIM Ganjil / Genap">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 bg-corp-850 border border-corp-border rounded-xl px-3 py-1.5 text-xs">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="text-slate-300 font-mono text-[11px]">RDBMS Synchronized</span>
+          </div>
+        </div>
+
+        <!-- Right: Actions & Tools -->
+        <div class="flex items-center gap-2.5">
+          <button onclick="openErdModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-corp-850 hover:bg-corp-800 text-xs font-medium text-slate-300 border border-corp-border transition-all hover:text-white cursor-pointer">
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+            </svg>
+            <span class="hidden sm:inline">Lihat ERD 8 Entitas</span>
+          </button>
+
+          <button onclick="resetSimulationData()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-corp-850 hover:bg-corp-800 text-xs font-medium text-slate-300 border border-corp-border transition-all hover:text-white cursor-pointer" title="Reset seluruh data basis data in-memory ke default">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <span class="hidden sm:inline">Reset DB</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= EXECUTIVE KPI RIBBON ================= -->
+  <section class="border-b border-corp-border/60 bg-corp-900/40">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        
+        <!-- KPI 1: Fleet Utilization -->
+        <div class="bg-corp-900/90 border border-corp-border rounded-xl p-3 sm:p-3.5 flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Fleet Operational</span>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span id="kpi-available-bikes" class="text-lg sm:text-xl font-bold font-mono text-white tabular-nums">3</span>
+              <span class="text-xs text-slate-500 font-mono">/ 4 Unit Aktif</span>
+            </div>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- KPI 2: Total Recorded Trips -->
+        <div class="bg-corp-900/90 border border-corp-border rounded-xl p-3 sm:p-3.5 flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Total Peminjaman</span>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span id="kpi-total-trips" class="text-lg sm:text-xl font-bold font-mono text-cyan-400 tabular-nums">3</span>
+              <span class="text-xs text-slate-500 font-mono">Record Fisik</span>
+            </div>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- KPI 3: Total Penalties -->
+        <div class="bg-corp-900/90 border border-corp-border rounded-xl p-3 sm:p-3.5 flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Total Denda Terkumpul</span>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span id="kpi-total-fines" class="text-lg sm:text-xl font-bold font-mono text-emerald-400 tabular-nums">Rp7.500</span>
+            </div>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- KPI 4: Maintenance Pipeline -->
+        <div class="bg-corp-900/90 border border-corp-border rounded-xl p-3 sm:p-3.5 flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Antrean Bengkel</span>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span id="kpi-maintenance-count" class="text-lg sm:text-xl font-bold font-mono text-amber-400 tabular-nums">1</span>
+              <span class="text-xs text-slate-500 font-mono">Tiket Servis</span>
+            </div>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MAIN TWO-TIER WORKSPACE ================= -->
+  <main class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+    <!-- UPPER WORKSPACE: SIMULATION CONSOLE & SETTLEMENT ENGINE -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- LEFT WORKSTATION (7 Cols): DISPATCH CONTROLLER & CAMPUS ROUTE VISUALIZER -->
+      <div class="lg:col-span-7 bg-corp-900 border border-corp-border rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        
+        <!-- Header Strip -->
+        <div class="flex items-center justify-between pb-4 border-b border-corp-border">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-corp-850 border border-corp-border flex items-center justify-center text-emerald-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-white tracking-wide uppercase">Trip Dispatch & Telemetry Console</h2>
+              <p class="text-[11px] text-slate-400">Konfigurasi skenario peminjaman sepeda & evaluasi aturan bisnis</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-corp-800 text-slate-300 border border-corp-border">Step 1 of 2</span>
+        </div>
+
+        <!-- 1. IDENTITAS AKUN & EVALUASI NIM (CARD KIRI) -->
+        <div class="bg-corp-850 border border-corp-border rounded-xl p-4 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex-1">
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Identitas Sivitas & Nomor Induk Mahasiswa</label>
+              <div class="flex gap-2">
+                <input type="text" id="sim-user-name" value="Ahmad Faiz" class="w-1/2 bg-corp-900 border border-corp-border rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-medium">
+                <div class="relative w-1/2">
+                  <input type="text" id="nim-input" value="230101001" maxlength="15" oninput="handleNimChange()" 
+                    class="w-full bg-corp-900 border border-corp-border rounded-lg px-3 py-1.5 text-xs font-mono text-emerald-400 font-bold focus:outline-none focus:border-emerald-500">
+                  <span id="nim-analysis-badge" class="absolute right-2 top-1.5 text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold">Ganjil</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Segmented Role Selector -->
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Pilih Kategori Keanggotaan</label>
+            <div class="grid grid-cols-3 gap-2" id="role-pill-group">
+              
+              <button type="button" onclick="setMembership('reguler')" id="role-pill-reguler"
+                class="role-pill p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-left transition-all cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-emerald-300">Mhs Reguler</span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                </div>
+                <span id="role-hint-reguler" class="text-[10px] text-slate-400 font-mono block mt-1">Gratis: 30 mnt</span>
+              </button>
+
+              <button type="button" onclick="setMembership('premium')" id="role-pill-premium"
+                class="role-pill p-2.5 rounded-xl border border-corp-border bg-corp-900 hover:border-slate-700 text-left transition-all cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-300">Mhs Premium</span>
+                </div>
+                <span id="role-hint-premium" class="text-[10px] text-slate-400 font-mono block mt-1">Gratis: 60 mnt</span>
+              </button>
+
+              <button type="button" onclick="setMembership('dosen')" id="role-pill-dosen"
+                class="role-pill p-2.5 rounded-xl border border-corp-border bg-corp-900 hover:border-slate-700 text-left transition-all cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-300">Dosen</span>
+                </div>
+                <span id="role-hint-dosen" class="text-[10px] text-slate-400 font-mono block mt-1">Tarif Khusus</span>
+              </button>
+
+            </div>
+            <input type="hidden" id="sim-membership" value="reguler">
+          </div>
+        </div>
+
+        <!-- 2. FLEET UNIT & ROUTE VISUALIZER MAP -->
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Unit Armada Sepeda Tersedia</label>
+              <select id="sim-bike-select" onchange="handleBikeChange()" 
+                class="w-full bg-corp-850 border border-corp-border rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 cursor-pointer">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Stasiun Tujuan (Rencana)</label>
+              <select id="sim-station-dest" onchange="runLiveCalculation()" 
+                class="w-full bg-corp-850 border border-corp-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer font-medium">
+                <option value="2">Stasiun 2 - Perpustakaan Pusat</option>
+                <option value="3">Stasiun 3 - Gedung Kuliah Bersama (GKB)</option>
+                <option value="1">Stasiun 1 - Rektorat & Gerbang Utama</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- CAMPUS TRANSIT MAP VECTOR (VISUALISASI RUTE OTOMATIS) -->
+          <div class="bg-corp-950 border border-corp-border rounded-xl p-4 relative overflow-hidden">
+            <div class="flex items-center justify-between mb-3 text-xs">
+              <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+                Peta Transit Jaringan Kampus & Reroute Engine
+              </span>
+              <span id="map-route-status" class="text-[10px] font-mono px-2 py-0.5 rounded bg-corp-850 text-emerald-400 border border-corp-border">
+                Rute Normal: St 1 &rarr; St 2
+              </span>
+            </div>
+
+            <!-- SVG Transit Diagram -->
+            <div class="relative w-full h-32 sm:h-36 flex items-center justify-center">
+              <svg viewBox="0 0 500 130" class="w-full h-full">
+                <!-- Background Connection Lines -->
+                <line x1="80" y1="65" x2="250" y2="65" stroke="#1f293d" stroke-width="2" stroke-dasharray="2 4"/>
+                <line x1="250" y1="65" x2="420" y2="65" stroke="#1f293d" stroke-width="2" stroke-dasharray="2 4"/>
+                <path d="M 80 65 Q 250 120 420 65" fill="none" stroke="#1f293d" stroke-width="2" stroke-dasharray="2 4"/>
+
+                <!-- Active Trajectory Line -->
+                <path id="svg-active-route" d="M 80 65 L 250 65" fill="none" stroke="#10b981" stroke-width="3" class="route-active"/>
+                
+                <!-- Reroute Detour Line (Visible when full) -->
+                <path id="svg-reroute-line" d="M 250 65 Q 335 15 420 65" fill="none" stroke="#f59e0b" stroke-width="2.5" class="route-reroute hidden"/>
+
+                <!-- Station 1 Node -->
+                <g id="node-st-1" transform="translate(80, 65)">
+                  <circle r="16" fill="#0d111a" stroke="#10b981" stroke-width="2"/>
+                  <text text-anchor="middle" dy="4" fill="#ffffff" font-size="10" font-family="monospace" font-weight="bold">ST 1</text>
+                  <text text-anchor="middle" dy="28" fill="#94a3b8" font-size="9" font-family="sans-serif">Rektorat</text>
+                </g>
+
+                <!-- Station 2 Node -->
+                <g id="node-st-2" transform="translate(250, 65)">
+                  <circle id="circle-st-2" r="16" fill="#0d111a" stroke="#3b82f6" stroke-width="2"/>
+                  <text text-anchor="middle" dy="4" fill="#ffffff" font-size="10" font-family="monospace" font-weight="bold">ST 2</text>
+                  <text text-anchor="middle" dy="28" fill="#94a3b8" font-size="9" font-family="sans-serif">Perpustakaan</text>
+                </g>
+
+                <!-- Station 3 Node -->
+                <g id="node-st-3" transform="translate(420, 65)">
+                  <circle id="circle-st-3" r="16" fill="#0d111a" stroke="#64748b" stroke-width="2"/>
+                  <text text-anchor="middle" dy="4" fill="#ffffff" font-size="10" font-family="monospace" font-weight="bold">ST 3</text>
+                  <text text-anchor="middle" dy="28" fill="#94a3b8" font-size="9" font-family="sans-serif">GKB Barat</text>
+                </g>
+              </svg>
+
+              <!-- In-map floating badge for detour -->
+              <div id="map-detour-badge" class="absolute top-2 right-4 hidden bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-mono px-2 py-0.5 rounded shadow">
+                Stasiun 2 Penuh &rarr; Reroute ke Stasiun 3 (+450 m)
+              </div>
+            </div>
+            
+            <input type="hidden" id="sim-station-origin" value="1">
+          </div>
+        </div>
+
+        <!-- 3. TRIP DURATION SCRUBBER & DUAL-TIMELINE GAUGE -->
+        <div class="bg-corp-850 border border-corp-border rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold text-slate-200">Durasi Perjalanan Aktual</span>
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400 text-[11px]">Durasi:</span>
+              <span id="duration-display" class="font-mono font-bold text-emerald-400 bg-corp-900 px-2.5 py-0.5 rounded border border-corp-border text-xs tabular-nums">75 Menit</span>
+            </div>
+          </div>
+
+          <!-- Slider -->
+          <input type="range" id="sim-duration" min="5" max="180" step="5" value="75" oninput="syncDuration(this.value)"
+            class="w-full h-1.5 bg-corp-950 rounded-lg cursor-pointer">
+
+          <!-- Free-Time vs Overtime Visual Meter Bar -->
+          <div class="w-full bg-corp-950 h-3 rounded-full overflow-hidden border border-corp-border flex">
+            <div id="meter-free-time" class="h-full bg-emerald-500 transition-all duration-300" style="width: 40%;" title="Batas Waktu Gratis"></div>
+            <div id="meter-overtime" class="h-full bg-amber-500 transition-all duration-300" style="width: 60%;" title="Waktu Keterlambatan Berbayar"></div>
+          </div>
+
+          <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+            <span id="meter-desc-free" class="flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Bebas Biaya: 30 mnt
+            </span>
+            <span id="meter-desc-overtime" class="flex items-center gap-1 text-amber-300">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span> Telat: 45 mnt
+            </span>
+          </div>
+
+          <!-- Quick Duration Presets -->
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <button type="button" onclick="setPresetDuration(15)" class="text-[11px] font-mono px-2.5 py-1 rounded bg-corp-900 hover:bg-corp-800 text-slate-300 border border-corp-border transition-colors cursor-pointer">15m</button>
+            <button type="button" onclick="setPresetDuration(30)" class="text-[11px] font-mono px-2.5 py-1 rounded bg-corp-900 hover:bg-corp-800 text-slate-300 border border-corp-border transition-colors cursor-pointer">30m</button>
+            <button type="button" onclick="setPresetDuration(60)" class="text-[11px] font-mono px-2.5 py-1 rounded bg-corp-900 hover:bg-corp-800 text-slate-300 border border-corp-border transition-colors cursor-pointer">60m</button>
+            <button type="button" onclick="setPresetDuration(75)" class="text-[11px] font-mono px-2.5 py-1 rounded bg-corp-900 hover:bg-corp-800 text-slate-300 border border-corp-border transition-colors cursor-pointer">75m</button>
+            <button type="button" onclick="setPresetDuration(90)" class="text-[11px] font-mono px-2.5 py-1 rounded bg-corp-900 hover:bg-corp-800 text-slate-300 border border-corp-border transition-colors cursor-pointer">90m</button>
+            <button type="button" onclick="setPresetDuration(120)" class="text-[11px] font-mono px-2.5 py-1 rounded bg-corp-900 hover:bg-corp-800 text-slate-300 border border-corp-border transition-colors cursor-pointer">120m</button>
+          </div>
+        </div>
+
+        <!-- 4. EDGE CASE TOGGLES (STATION FULL & MECHANICAL FAILURE) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          
+          <!-- Toggle 1: Saturation Reroute -->
+          <label class="flex items-start gap-3 p-3.5 rounded-xl border border-corp-border bg-corp-850 hover:border-slate-600 transition-colors cursor-pointer select-none">
+            <div class="relative inline-flex items-center shrink-0 mt-0.5">
+              <input type="checkbox" id="sim-station-full" onchange="runLiveCalculation()" class="sr-only peer">
+              <div class="w-9 h-5 bg-corp-950 peer-checked:bg-amber-500 rounded-full transition-colors border border-corp-border"></div>
+              <div class="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-slate-200 block">Stasiun Tujuan Penuh</span>
+              <p class="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                Sistem mengalihkan dok dan mencatat <code class="text-amber-300 bg-corp-950 px-1 py-0.5 rounded text-[10px]">selisih_jarak_m</code> (+450 m).
+              </p>
+            </div>
+          </label>
+
+          <!-- Toggle 2: Mechanical Failure -->
+          <label class="flex items-start gap-3 p-3.5 rounded-xl border border-corp-border bg-corp-850 hover:border-slate-600 transition-colors cursor-pointer select-none">
+            <div class="relative inline-flex items-center shrink-0 mt-0.5">
+              <input type="checkbox" id="sim-bike-broken" onchange="runLiveCalculation()" class="sr-only peer">
+              <div class="w-9 h-5 bg-corp-950 peer-checked:bg-rose-500 rounded-full transition-colors border border-corp-border"></div>
+              <div class="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-slate-200 block">Insiden Kerusakan Sepeda</span>
+              <p class="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                Membuat tiket perbaikan di bengkel mekanik & afiliasi PT Swallow.
+              </p>
+            </div>
+          </label>
+
+        </div>
+
+        <!-- 5. COMMIT TRANSACTION BUTTON -->
+        <div class="pt-2">
+          <button onclick="executeTransaction()" 
+            class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-slate-950 font-extrabold text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2.5 active:scale-[0.99] cursor-pointer">
+            <svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>COMMIT & CATAT TRANSAKSI KE DATABASE</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- RIGHT WORKSTATION (5 Cols): BILLING AUDIT & LIVE SQL TERMINAL -->
+      <div class="lg:col-span-5 space-y-5">
+        
+        <!-- ENTERPRISE DIGITAL AUDIT LEDGER -->
+        <div class="bg-corp-900 border border-corp-border rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between pb-3.5 border-b border-corp-border mb-4">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-corp-850 border border-corp-border flex items-center justify-center text-emerald-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-white">Struk Audit Transaksi</h3>
+                  <span class="text-[10px] text-slate-400">Automated Financial Settlement</span>
+                </div>
+              </div>
+              <span id="res-badge-status" class="px-2.5 py-1 rounded-full text-[10px] font-bold font-mono bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                Terkena Denda
+              </span>
+            </div>
+
+            <!-- Settlement Waterfall Ledger -->
+            <div class="bg-corp-950 rounded-xl p-4 border border-corp-border space-y-3 font-mono text-xs">
+              <div class="flex justify-between items-center text-slate-400 pb-2 border-b border-corp-border">
+                <span class="font-sans">Entitas Akun / Sivitas</span>
+                <span id="res-member-desc" class="text-white font-semibold font-sans">Mhs Reguler</span>
+              </div>
+
+              <div class="flex justify-between items-center text-slate-400">
+                <span class="font-sans">Durasi Penggunaan</span>
+                <span id="res-total-dur" class="text-slate-200 tabular-nums">75 Menit</span>
+              </div>
+
+              <div class="flex justify-between items-center text-slate-400">
+                <span class="font-sans">Batas Bebas Biaya [A]</span>
+                <span id="res-free-time" class="text-emerald-400 tabular-nums font-bold">30 Menit</span>
+              </div>
+
+              <div class="flex justify-between items-center text-slate-400">
+                <span class="font-sans">Kelebihan Waktu (Overtime)</span>
+                <span id="res-overtime" class="text-amber-400 tabular-nums font-bold">45 Menit</span>
+              </div>
+
+              <div class="flex justify-between items-center text-slate-400">
+                <span class="font-sans">Formula Denda Terapan [B]</span>
+                <span id="res-formula-desc" class="text-amber-300 text-right tabular-nums">Rp100 × 45 mnt flat</span>
+              </div>
+
+              <!-- Reroute Details -->
+              <div id="res-reroute-box" class="pt-2 border-t border-corp-border hidden space-y-1">
+                <div class="flex justify-between text-amber-300 font-semibold">
+                  <span class="font-sans text-[11px] flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Stasiun Pengalihan:
+                  </span>
+                  <span id="res-reroute-dest">Stasiun 3 (+450 m)</span>
+                </div>
+                <div class="flex justify-between text-[11px] text-slate-500 font-sans">
+                  <span>Dok Target Penuh:</span>
+                  <span class="text-rose-400 font-medium">10 / 10 Slot Terisi</span>
+                </div>
+              </div>
+
+              <!-- Broken Bike Details -->
+              <div id="res-broken-box" class="pt-2 border-t border-corp-border hidden space-y-1">
+                <div class="flex justify-between text-rose-300 font-semibold font-sans text-[11px]">
+                  <span>Status Armada:</span>
+                  <span>Perlu Perbaikan</span>
+                </div>
+                <div class="flex justify-between text-[11px] text-slate-400 font-sans">
+                  <span>Mekanik Bertugas:</span>
+                  <span class="text-slate-200">Budi Santoso &bull; PT Swallow</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Total Settlement Strip -->
+          <div class="pt-4 mt-4 border-t border-corp-border flex items-end justify-between">
+            <div>
+              <span class="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Kewajiban Pembayaran:</span>
+              <span id="res-total-fine" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono tabular-nums">Rp4.500</span>
+            </div>
+            <div class="text-right">
+              <span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Siap Commit
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- REAL-TIME SQL CONSOLE & EXPORT TOOLS -->
+        <div class="bg-corp-900 border border-corp-border rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-corp-border">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-xs font-bold text-white uppercase tracking-wider font-mono">Live SQL Transaction Stream</span>
+            </div>
+            <button onclick="copyCurrentSqlInsert()" class="text-[11px] font-mono px-2 py-0.5 rounded bg-corp-850 hover:bg-corp-800 text-emerald-400 border border-corp-border transition-colors cursor-pointer flex items-center gap-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              Salin SQL
+            </button>
+          </div>
+
+          <div class="bg-corp-950 p-3 rounded-xl border border-corp-border font-mono text-[11px] text-slate-300 overflow-x-auto leading-relaxed">
+            <span class="text-slate-500">-- Generated Physical Transaction Statement:</span><br>
+            <span class="text-cyan-400">BEGIN TRANSACTION;</span><br>
+            <span id="sql-preview-text" class="text-emerald-300">
+              INSERT INTO peminjaman VALUES (5004, 105, 'CB-ECO-001', 1, 2, NULL, 75, 45, 4500, 0, 'selesai');
+            </span><br>
+            <span class="text-cyan-400">COMMIT;</span>
+          </div>
+        </div>
+
+        <!-- Notification Toast (Slide-in) -->
+        <div id="toast-message" class="hidden p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-950/60 text-emerald-200 text-xs flex items-center justify-between shadow-xl transition-all">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span id="toast-text" class="font-medium">Transaksi berhasil dicatat ke database!</span>
+          </div>
+          <button onclick="document.getElementById('toast-message').classList.add('hidden')" class="text-slate-400 hover:text-white p-0.5 cursor-pointer">✕</button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- LOWER WORKSPACE: ENTERPRISE DATA GRID & PDM INSPECTOR -->
+    <div class="bg-corp-900 border border-corp-border rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+      
+      <!-- Top Inspector Header & Tab Controls -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3.5 border-b border-corp-border pb-4">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-corp-850 border border-corp-border flex items-center justify-center text-cyan-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white tracking-wide uppercase">Enterprise RDBMS Ledger & State Inspector</h3>
+              <p class="text-xs text-slate-400">Sinkronisasi baris fisik data (PDM) secara real-time</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs with Counter Badges -->
+        <div class="flex items-center gap-1.5 bg-corp-950 p-1.5 rounded-xl border border-corp-border text-xs font-medium overflow-x-auto">
+          <button onclick="switchDbTab('tbl-peminjaman')" id="db-nav-tbl-peminjaman" 
+            class="db-nav-btn px-3 py-1.5 rounded-lg text-emerald-300 bg-corp-850 border border-emerald-500/30 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+            <span>peminjaman</span>
+            <span id="count-peminjaman" class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">3</span>
+          </button>
+          
+          <button onclick="switchDbTab('tbl-sepeda')" id="db-nav-tbl-sepeda" 
+            class="db-nav-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+            <span>sepeda</span>
+            <span id="count-sepeda" class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-corp-800 text-slate-300">4</span>
+          </button>
+          
+          <button onclick="switchDbTab('tbl-stasiun')" id="db-nav-tbl-stasiun" 
+            class="db-nav-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+            <span>stasiun</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-corp-800 text-slate-300">3</span>
+          </button>
+          
+          <button onclick="switchDbTab('tbl-perbaikan')" id="db-nav-tbl-perbaikan" 
+            class="db-nav-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+            <span>perbaikan & mekanik</span>
+            <span id="count-perbaikan" class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-corp-800 text-slate-300">1</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Toolbar: Live Search & Schema Metadata Legend -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div class="relative flex-1 max-w-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+          <input type="text" id="db-search-input" oninput="filterCurrentTable()" placeholder="Filter tabel data (contoh: CB-ECO, 5001)..." 
+            class="w-full bg-corp-950 border border-corp-border rounded-xl pl-9 pr-3 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all">
+        </div>
+        
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+            <span class="px-1.5 py-0.5 rounded bg-rose-950/40 text-rose-300 border border-rose-800/40 font-bold">PK</span> Primary Key
+            <span class="px-1.5 py-0.5 rounded bg-sky-950/40 text-sky-300 border border-sky-800/40 font-bold ml-1">FK</span> Foreign Key
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE VIEW 1: PEMINJAMAN -->
+      <div id="view-tbl-peminjaman" class="db-tab-content block overflow-x-auto rounded-xl border border-corp-border">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-corp-950 border-b border-corp-border text-slate-400 uppercase text-[10px]">
+            <tr>
+              <th class="py-2.5 px-3.5"><span class="px-1 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-800/40 font-bold text-[9px] mr-1">PK</span>id_peminjaman</th>
+              <th class="py-2.5 px-3"><span class="px-1 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-800/40 font-bold text-[9px] mr-1">FK</span>id_anggota</th>
+              <th class="py-2.5 px-3"><span class="px-1 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-800/40 font-bold text-[9px] mr-1">FK</span>no_rangka</th>
+              <th class="py-2.5 px-3">id_st_asal</th>
+              <th class="py-2.5 px-3">id_st_tujuan</th>
+              <th class="py-2.5 px-3">id_st_alih</th>
+              <th class="py-2.5 px-3">durasi</th>
+              <th class="py-2.5 px-3">keterlambatan</th>
+              <th class="py-2.5 px-3">denda_rp</th>
+              <th class="py-2.5 px-3">&Delta; jarak_m</th>
+              <th class="py-2.5 px-3.5">status_transaksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-peminjaman" class="divide-y divide-corp-border/40 text-slate-300 bg-corp-950/40">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TABLE VIEW 2: SEPEDA -->
+      <div id="view-tbl-sepeda" class="db-tab-content hidden overflow-x-auto rounded-xl border border-corp-border">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-corp-950 border-b border-corp-border text-slate-400 uppercase text-[10px]">
+            <tr>
+              <th class="py-2.5 px-3.5"><span class="px-1 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-800/40 font-bold text-[9px] mr-1">PK</span>no_rangka</th>
+              <th class="py-2.5 px-3">tipe_sepeda</th>
+              <th class="py-2.5 px-3">status_ketersediaan</th>
+              <th class="py-2.5 px-3"><span class="px-1 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-800/40 font-bold text-[9px] mr-1">FK</span>id_stasiun_parkir</th>
+              <th class="py-2.5 px-3.5">lokasi_sekarang</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-sepeda" class="divide-y divide-corp-border/40 text-slate-300 bg-corp-950/40">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TABLE VIEW 3: STASIUN -->
+      <div id="view-tbl-stasiun" class="db-tab-content hidden overflow-x-auto rounded-xl border border-corp-border">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-corp-950 border-b border-corp-border text-slate-400 uppercase text-[10px]">
+            <tr>
+              <th class="py-2.5 px-3.5"><span class="px-1 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-800/40 font-bold text-[9px] mr-1">PK</span>id_stasiun</th>
+              <th class="py-2.5 px-3">nama_stasiun</th>
+              <th class="py-2.5 px-3">lokasi</th>
+              <th class="py-2.5 px-3">kapasitas_stasiun</th>
+              <th class="py-2.5 px-3">sepeda_standby</th>
+              <th class="py-2.5 px-3.5">kondisi_slot</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-stasiun" class="divide-y divide-corp-border/40 text-slate-300 bg-corp-950/40">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TABLE VIEW 4: PERBAIKAN & MEKANIK -->
+      <div id="view-tbl-perbaikan" class="db-tab-content hidden overflow-x-auto rounded-xl border border-corp-border">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-corp-950 border-b border-corp-border text-slate-400 uppercase text-[10px]">
+            <tr>
+              <th class="py-2.5 px-3.5"><span class="px-1 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-800/40 font-bold text-[9px] mr-1">PK</span>id_perbaikan</th>
+              <th class="py-2.5 px-3"><span class="px-1 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-800/40 font-bold text-[9px] mr-1">FK</span>no_rangka</th>
+              <th class="py-2.5 px-3"><span class="px-1 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-800/40 font-bold text-[9px] mr-1">FK</span>id_mekanik</th>
+              <th class="py-2.5 px-3">nama_mekanik</th>
+              <th class="py-2.5 px-3">supplier_ban_mitra</th>
+              <th class="py-2.5 px-3">deskripsi_kerusakan</th>
+              <th class="py-2.5 px-3">tindakan</th>
+              <th class="py-2.5 px-3.5">status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-perbaikan" class="divide-y divide-corp-border/40 text-slate-300 bg-corp-950/40">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ================= ERD MODAL (8 ENTITAS LENGKAP) ================= -->
+  <div id="modal-erd" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-corp-900 border border-corp-border rounded-2xl max-w-4xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-corp-border">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Arsitektur Fisik Basis Data (8 Entitas Relasional)</h3>
+        </div>
+        <button onclick="closeErdModal()" class="text-slate-400 hover:text-white font-mono text-sm">✕ Tutup</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+        <div class="bg-corp-950 p-3 rounded-xl border border-corp-border">
+          <span class="text-emerald-400 font-bold block mb-1">1. jenis_keanggotaan &harr; anggota</span>
+          <p class="text-slate-400 text-[11px] font-sans">1 Jenis Keanggotaan dimiliki oleh banyak Anggota (Reguler, Premium, Dosen).</p>
+        </div>
+        <div class="bg-corp-950 p-3 rounded-xl border border-corp-border">
+          <span class="text-emerald-400 font-bold block mb-1">2. anggota &harr; peminjaman</span>
+          <p class="text-slate-400 text-[11px] font-sans">Sivitas meminjam sepeda; mencatat durasi, denda, dan stasiun asal/tujuan.</p>
+        </div>
+        <div class="bg-corp-950 p-3 rounded-xl border border-corp-border">
+          <span class="text-cyan-400 font-bold block mb-1">3. sepeda &harr; stasiun</span>
+          <p class="text-slate-400 text-[11px] font-sans">Sepeda terparkir di stasiun asal/tujuan, atau bernilai NULL saat di bengkel.</p>
+        </div>
+        <div class="bg-corp-950 p-3 rounded-xl border border-corp-border">
+          <span class="text-cyan-400 font-bold block mb-1">4. peminjaman &harr; stasiun_alih</span>
+          <p class="text-slate-400 text-[11px] font-sans">Jika slot stasiun tujuan penuh, otomatis dialihkan ke stasiun terdekat (+450 m).</p>
+        </div>
+        <div class="bg-corp-950 p-3 rounded-xl border border-corp-border">
+          <span class="text-rose-400 font-bold block mb-1">5. sepeda &harr; perbaikan</span>
+          <p class="text-slate-400 text-[11px] font-sans">Insiden kerusakan membuat tiket riwayat penanganan di tabel perbaikan.</p>
+        </div>
+        <div class="bg-corp-950 p-3 rounded-xl border border-corp-border">
+          <span class="text-rose-400 font-bold block mb-1">6. mekanik &harr; supplier_ban</span>
+          <p class="text-slate-400 text-[11px] font-sans">Mekanik terhubung dengan mitra supplier ban untuk penggantian spare-part.</p>
+        </div>
+      </div>
+
+      <div class="pt-2 text-right">
+        <button onclick="closeErdModal()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer">
+          Mengerti & Kembali ke Simulator
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="border-t border-corp-border bg-corp-950 py-5 text-xs text-slate-500">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="font-semibold text-slate-300">CampusBike Enterprise Platform</span>
+        <span>&bull;</span>
+        <span>RDBMS Operational Sandbox v2.4</span>
+      </div>
+      <div class="flex items-center gap-4 text-[11px] font-mono text-slate-400">
+        <span>Aturan [A] Waktu</span>
+        <span>&bull;</span>
+        <span>Aturan [B] Skema Denda</span>
+        <span>&bull;</span>
+        <span>Auto-Detour 450m</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= JAVASCRIPT SIMULATION LOGIC ================= -->
+  <script>
+    // State Basis Data In-Memory
+    const db = {
+      jenis_keanggotaan: [
+        { id_jenis: 1, nama_jenis: 'Reguler' },
+        { id_jenis: 2, nama_jenis: 'Premium' },
+        { id_jenis: 3, nama_jenis: 'Dosen' }
+      ],
+      stasiun: [
+        { id_stasiun: 1, nama_stasiun: 'Stasiun 1 - Rektorat & Gerbang', lokasi: 'Depan Gedung Rektorat', kapasitas_stasiun: 15 },
+        { id_stasiun: 2, nama_stasiun: 'Stasiun 2 - Perpustakaan Pusat', lokasi: 'Plaza Perpustakaan', kapasitas_stasiun: 10 },
+        { id_stasiun: 3, nama_stasiun: 'Stasiun 3 - GKB Barat', lokasi: 'Lobi GKB Barat', kapasitas_stasiun: 12 }
+      ],
+      supplier_ban: [
+        { id_supplier: 1, nama_supplier: 'PT Swallow Tire Nusantara', nama_kontak: 'Pak Hendra', nomor_telepon: '08123456789' },
+        { id_supplier: 2, nama_supplier: 'CV Kenda Rubber Jaya', nama_kontak: 'Ibu Rina', nomor_telepon: '08139876543' }
+      ],
+      mekanik: [
+        { id_mekanik: 1, nama_mekanik: 'Budi Santoso', nomor_telepon_mekanik: '08561122334', id_supplier: 1 },
+        { id_mekanik: 2, nama_mekanik: 'Agus Pratama', nomor_telepon_mekanik: '08579988776', id_supplier: 2 }
+      ],
+      sepeda: [
+        { no_rangka: 'CB-ECO-001', tipe: 'City Bike Gen 1', status_ketersediaan: 'tersedia', id_stasiun_parkir: 1 },
+        { no_rangka: 'CB-ECO-002', tipe: 'City Bike Gen 1', status_ketersediaan: 'tersedia', id_stasiun_parkir: 1 },
+        { no_rangka: 'CB-PRE-009', tipe: 'Speed Bike Premium', status_ketersediaan: 'tersedia', id_stasiun_parkir: 2 },
+        { no_rangka: 'CB-ECO-015', tipe: 'City Bike Gen 2', status_ketersediaan: 'perbaikan', id_stasiun_parkir: null }
+      ],
+      perbaikan: [
+        { id_perbaikan: 101, no_rangka: 'CB-ECO-015', id_mekanik: 1, tgl_masuk: '2026-03-28 09:15', tgl_selesai: null, deskripsi_kerusakan: 'Ban belakang sobek & rantai kendor', tindakan: 'Ganti ban baru dari PT Swallow', status: 'proses' }
+      ],
+      peminjaman: [
+        { id_peminjaman: 5001, id_anggota: 101, no_rangka: 'CB-ECO-001', id_stasiun_asal: 1, id_stasiun_tujuan: 2, id_stasiun_alih: null, durasi_menit: 25, keterlambatan_menit: 0, denda_rp: 0, selisih_jarak_m: 0, status_transaksi: 'selesai' },
+        { id_peminjaman: 5002, id_anggota: 102, no_rangka: 'CB-PRE-009', id_stasiun_asal: 2, id_stasiun_tujuan: 3, id_stasiun_alih: null, durasi_menit: 75, keterlambatan_menit: 15, denda_rp: 1500, selisih_jarak_m: 0, status_transaksi: 'selesai' },
+        { id_peminjaman: 5003, id_anggota: 103, no_rangka: 'CB-ECO-002', id_stasiun_asal: 1, id_stasiun_tujuan: 2, id_stasiun_alih: 3, durasi_menit: 90, keterlambatan_menit: 60, denda_rp: 6000, selisih_jarak_m: 450, status_transaksi: 'selesai' }
+      ]
+    };
+
+    let nextPinjamId = 5004;
+    let nextPerbaikanId = 102;
+    let isOddNim = true;
+
+    // Segmented Membership Selection
+    function setMembership(val) {
+      document.getElementById('sim-membership').value = val;
+      const roles = ['reguler', 'premium', 'dosen'];
+      roles.forEach(r => {
+        const btn = document.getElementById('role-pill-' + r);
+        if (r === val) {
+          btn.className = "role-pill p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-left transition-all cursor-pointer";
+          const title = btn.querySelector('.font-bold');
+          if (title) title.className = "text-xs font-bold text-emerald-300";
+        } else {
+          btn.className = "role-pill p-2.5 rounded-xl border border-corp-border bg-corp-900 hover:border-slate-700 text-left transition-all cursor-pointer";
+          const title = btn.querySelector('.font-bold');
+          if (title) title.className = "text-xs font-bold text-slate-300";
+        }
+      });
+      runLiveCalculation();
+    }
+
+    // Handle NIM Changes & Rules
+    function handleNimChange() {
+      const input = document.getElementById('nim-input').value.trim();
+      const digits = input.replace(/\D/g, '');
+      const lastTwo = digits.length >= 2 ? parseInt(digits.slice(-2)) : (parseInt(digits) || 1);
+      
+      isOddNim = (lastTwo % 2 !== 0);
+      const formatted = String(lastTwo).padStart(2, '0');
+
+      document.getElementById('header-nim-display').innerText = input || '230101001';
+      const parityBadge = document.getElementById('header-parity-badge');
+      const analysisBadge = document.getElementById('nim-analysis-badge');
+
+      const hintReg = document.getElementById('role-hint-reguler');
+      const hintPrem = document.getElementById('role-hint-premium');
+      const hintDos = document.getElementById('role-hint-dosen');
+
+      if (isOddNim) {
+        parityBadge.innerText = "Ganjil";
+        parityBadge.className = "px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[10px] uppercase font-bold";
+        analysisBadge.innerText = `Ganjil (${formatted})`;
+        analysisBadge.className = "absolute right-2 top-1.5 text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold";
+        
+        hintReg.innerText = "Gratis: 30 mnt";
+        hintPrem.innerText = "Gratis: 60 mnt";
+        hintDos.innerText = "Rp1.000 / 10 mnt";
+      } else {
+        parityBadge.innerText = "Genap";
+        parityBadge.className = "px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 text-[10px] uppercase font-bold";
+        analysisBadge.innerText = `Genap (${formatted})`;
+        analysisBadge.className = "absolute right-2 top-1.5 text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-bold";
+
+        hintReg.innerText = "Gratis: 20 mnt";
+        hintPrem.innerText = "Gratis: 45 mnt";
+        hintDos.innerText = "Gratis: 90 mnt";
+      }
+
+      runLiveCalculation();
+    }
+
+    function toggleQuickNim() {
+      const current = document.getElementById('nim-input').value;
+      if (isOddNim) {
+        document.getElementById('nim-input').value = "230101002";
+      } else {
+        document.getElementById('nim-input').value = "230101001";
+      }
+      handleNimChange();
+    }
+
+    function syncDuration(val) {
+      document.getElementById('duration-display').innerText = val + " Menit";
+      runLiveCalculation();
+    }
+
+    function setPresetDuration(val) {
+      document.getElementById('sim-duration').value = val;
+      syncDuration(val);
+    }
+
+    // LIVE CALCULATION ENGINE & SVG MAP UPDATER
+    function runLiveCalculation() {
+      const membership = document.getElementById('sim-membership').value;
+      const duration = parseInt(document.getElementById('sim-duration').value) || 0;
+      const isStationFull = document.getElementById('sim-station-full').checked;
+      const isBroken = document.getElementById('sim-bike-broken').checked;
+      const originId = parseInt(document.getElementById('sim-station-origin').value) || 1;
+      const destId = parseInt(document.getElementById('sim-station-dest').value) || 2;
+
+      // 1. Batas Gratis [Kasus A]
+      let freeLimit = 0;
+      if (isOddNim) {
+        if (membership === 'reguler') freeLimit = 30;
+        else if (membership === 'premium') freeLimit = 60;
+        else if (membership === 'dosen') freeLimit = 60;
+      } else {
+        if (membership === 'reguler') freeLimit = 20;
+        else if (membership === 'premium') freeLimit = 45;
+        else if (membership === 'dosen') freeLimit = 90;
+      }
+
+      // 2. Keterlambatan
+      const overtime = Math.max(0, duration - freeLimit);
+
+      // 3. Denda [Kasus B]
+      let fine = 0;
+      let formulaText = "";
+
+      if (overtime > 0) {
+        if (isOddNim) {
+          if (membership === 'dosen') {
+            const blocks = Math.ceil(overtime / 10);
+            fine = blocks * 1000;
+            formulaText = `Rp1.000 × ${blocks} blok 10-mnt (Dosen)`;
+          } else {
+            fine = overtime * 100;
+            formulaText = `Rp100 × ${overtime} mnt flat`;
+          }
+        } else {
+          if (overtime <= 20) {
+            fine = 500;
+            formulaText = `Rp500 (≤ 20 mnt awal)`;
+          } else {
+            const extraMinutes = overtime - 20;
+            const extraBlocks = Math.ceil(extraMinutes / 10);
+            fine = 500 + (extraBlocks * 500);
+            formulaText = `Rp500 + (${extraBlocks} × Rp500)`;
+          }
+        }
+      } else {
+        fine = 0;
+        formulaText = "Bebas Biaya (Tepat Waktu)";
+      }
+
+      // Member text
+      let memberLabel = "Mahasiswa Reguler";
+      if (membership === 'premium') memberLabel = "Mahasiswa Premium";
+      if (membership === 'dosen') memberLabel = "Dosen Sivitas";
+
+      // Update Audit UI
+      document.getElementById('res-free-time').innerText = freeLimit + " Menit";
+      document.getElementById('res-overtime').innerText = overtime + " Menit";
+      document.getElementById('res-total-dur').innerText = duration + " Menit";
+      document.getElementById('res-member-desc').innerText = memberLabel;
+      document.getElementById('res-formula-desc').innerText = formulaText;
+      document.getElementById('res-total-fine').innerText = "Rp" + fine.toLocaleString('id-ID');
+
+      // Visual Meter Widths
+      const freePercent = Math.min(100, Math.round((Math.min(duration, freeLimit) / duration) * 100));
+      const overPercent = 100 - freePercent;
+      document.getElementById('meter-free-time').style.width = freePercent + "%";
+      document.getElementById('meter-overtime').style.width = overPercent + "%";
+      document.getElementById('meter-desc-free').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Batas Gratis: ${freeLimit} mnt`;
+      document.getElementById('meter-desc-overtime').innerHTML = `<span class="w-2 h-2 rounded-full ${overtime > 0 ? 'bg-amber-400' : 'bg-slate-600'}"></span> Keterlambatan: ${overtime} mnt`;
+
+      const badgeStatus = document.getElementById('res-badge-status');
+      if (overtime > 0) {
+        badgeStatus.className = "px-2.5 py-1 rounded-full text-[10px] font-bold font-mono bg-rose-500/10 text-rose-400 border border-rose-500/30";
+        badgeStatus.innerText = "Terkena Denda";
+      } else {
+        badgeStatus.className = "px-2.5 py-1 rounded-full text-[10px] font-bold font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
+        badgeStatus.innerText = "Bebas Biaya";
+      }
+
+      // Reroute Display & Map Sync
+      const rerouteBox = document.getElementById('res-reroute-box');
+      const detourBadge = document.getElementById('map-detour-badge');
+      const rerouteLine = document.getElementById('svg-reroute-line');
+      const activeLine = document.getElementById('svg-active-route');
+      const mapRouteStatus = document.getElementById('map-route-status');
+
+      // Coordinate nodes for stations
+      const coords = { 1: 80, 2: 250, 3: 420 };
+      const startX = coords[originId] || 80;
+      const endX = coords[destId] || 250;
+      activeLine.setAttribute('d', `M ${startX} 65 L ${endX} 65`);
+
+      if (isStationFull) {
+        rerouteBox.classList.remove('hidden');
+        detourBadge.classList.remove('hidden');
+        rerouteLine.classList.remove('hidden');
+        
+        const rerouteTarget = (destId === 3) ? 1 : 3;
+        rerouteLine.setAttribute('d', `M ${endX} 65 Q ${(endX + coords[rerouteTarget])/2} 15 ${coords[rerouteTarget]} 65`);
+        mapRouteStatus.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30";
+        mapRouteStatus.innerText = `Dialihkan ke Stasiun ${rerouteTarget} (+450 m)`;
+      } else {
+        rerouteBox.classList.add('hidden');
+        detourBadge.classList.add('hidden');
+        rerouteLine.classList.add('hidden');
+        mapRouteStatus.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-corp-850 text-emerald-400 border border-corp-border";
+        mapRouteStatus.innerText = `Rute Normal: St ${originId} &rarr; St ${destId}`;
+      }
+
+      // Broken Bike Display
+      const brokenBox = document.getElementById('res-broken-box');
+      if (isBroken) {
+        brokenBox.classList.remove('hidden');
+      } else {
+        brokenBox.classList.add('hidden');
+      }
+
+      // Update SQL Statement Preview
+      const bikeRangka = document.getElementById('sim-bike-select').value || 'CB-ECO-001';
+      const alihTarget = isStationFull ? ((destId === 3) ? 1 : 3) : 'NULL';
+      const diffDist = isStationFull ? 450 : 0;
+      document.getElementById('sql-preview-text').innerText = 
+        `INSERT INTO peminjaman VALUES (${nextPinjamId}, 105, '${bikeRangka}', ${originId}, ${destId}, ${alihTarget}, ${duration}, ${overtime}, ${fine}, ${diffDist}, 'selesai');`;
+    }
+
+    // Populate Bikes into Dropdown
+    function populateBikeSelect() {
+      const select = document.getElementById('sim-bike-select');
+      select.innerHTML = '';
+      
+      const availableBikes = db.sepeda.filter(b => b.status_ketersediaan === 'tersedia');
+      availableBikes.forEach(bike => {
+        const opt = document.createElement('option');
+        opt.value = bike.no_rangka;
+        opt.innerText = `${bike.no_rangka} • ${bike.tipe} (Di Stasiun ${bike.id_stasiun_parkir})`;
+        select.appendChild(opt);
+      });
+
+      if (availableBikes.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.innerText = 'Semua unit sedang bertugas/servis';
+        select.appendChild(opt);
+      }
+
+      handleBikeChange();
+    }
+
+    function handleBikeChange() {
+      const selectedRangka = document.getElementById('sim-bike-select').value;
+      const bike = db.sepeda.find(b => b.no_rangka === selectedRangka);
+      const originInput = document.getElementById('sim-station-origin');
+      
+      if (bike && bike.id_stasiun_parkir) {
+        originInput.value = bike.id_stasiun_parkir;
+      } else {
+        originInput.value = 1;
+      }
+
+      runLiveCalculation();
+    }
+
+    // Execute and Commit Transaction
+    function executeTransaction() {
+      const bikeRangka = document.getElementById('sim-bike-select').value;
+      if (!bikeRangka) {
+        showToast("Pilih unit armada yang aktif terlebih dahulu!");
+        return;
+      }
+
+      const duration = parseInt(document.getElementById('sim-duration').value) || 0;
+      const isStationFull = document.getElementById('sim-station-full').checked;
+      const isBroken = document.getElementById('sim-bike-broken').checked;
+      const membership = document.getElementById('sim-membership').value;
+      const originId = parseInt(document.getElementById('sim-station-origin').value) || 1;
+      const destId = parseInt(document.getElementById('sim-station-dest').value) || 2;
+
+      let freeLimit = 0;
+      if (isOddNim) {
+        freeLimit = (membership === 'reguler') ? 30 : 60;
+      } else {
+        freeLimit = (membership === 'reguler') ? 20 : (membership === 'premium' ? 45 : 90);
+      }
+      const overtime = Math.max(0, duration - freeLimit);
+      
+      let fine = 0;
+      if (overtime > 0) {
+        if (isOddNim) {
+          fine = (membership === 'dosen') ? Math.ceil(overtime / 10) * 1000 : overtime * 100;
+        } else {
+          fine = (overtime <= 20) ? 500 : 500 + Math.ceil((overtime - 20) / 10) * 500;
+        }
+      }
+
+      let finalStationId = destId;
+      let rerouteStationId = null;
+      let diffDistance = 0;
+
+      if (isStationFull) {
+        rerouteStationId = (destId === 3) ? 1 : 3;
+        finalStationId = rerouteStationId;
+        diffDistance = 450;
+      }
+
+      // Add to peminjaman
+      const newPinjam = {
+        id_peminjaman: nextPinjamId++,
+        id_anggota: 105,
+        no_rangka: bikeRangka,
+        id_stasiun_asal: originId,
+        id_stasiun_tujuan: destId,
+        id_stasiun_alih: rerouteStationId,
+        durasi_menit: duration,
+        keterlambatan_menit: overtime,
+        denda_rp: fine,
+        selisih_jarak_m: diffDistance,
+        status_transaksi: 'selesai'
+      };
+      db.peminjaman.unshift(newPinjam);
+
+      // Update bike & maintenance
+      const bikeObj = db.sepeda.find(b => b.no_rangka === bikeRangka);
+      if (bikeObj) {
+        if (isBroken) {
+          bikeObj.status_ketersediaan = 'perbaikan';
+          bikeObj.id_stasiun_parkir = null;
+
+          const newPerbaikan = {
+            id_perbaikan: nextPerbaikanId++,
+            no_rangka: bikeRangka,
+            id_mekanik: 1, // Budi Santoso
+            tgl_masuk: 'Baru Saja',
+            tgl_selesai: null,
+            deskripsi_kerusakan: 'Dilaporkan rusak saat peminjaman #' + newPinjam.id_peminjaman,
+            tindakan: 'Pengecekan komponen ban & rem oleh Budi',
+            status: 'proses'
+          };
+          db.perbaikan.unshift(newPerbaikan);
+        } else {
+          bikeObj.status_ketersediaan = 'tersedia';
+          bikeObj.id_stasiun_parkir = finalStationId;
+        }
+      }
+
+      // Update KPIs & Tables
+      updateExecutiveKpis();
+      renderDatabaseTables();
+      populateBikeSelect();
+      showToast(`Transaksi #${newPinjam.id_peminjaman} berhasil di-commit ke tabel peminjaman!`);
+    }
+
+    // Update KPI Ribbon
+    function updateExecutiveKpis() {
+      const availBikes = db.sepeda.filter(b => b.status_ketersediaan === 'tersedia').length;
+      document.getElementById('kpi-available-bikes').innerText = availBikes;
+      document.getElementById('kpi-total-trips').innerText = db.peminjaman.length;
+
+      const totalFines = db.peminjaman.reduce((acc, curr) => acc + (curr.denda_rp || 0), 0);
+      document.getElementById('kpi-total-fines').innerText = 'Rp' + totalFines.toLocaleString('id-ID');
+
+      const inShop = db.sepeda.filter(b => b.status_ketersediaan === 'perbaikan').length;
+      document.getElementById('kpi-maintenance-count').innerText = inShop;
+    }
+
+    // Render Data into Physical Tables
+    function renderDatabaseTables() {
+      // 1. Peminjaman
+      const tbodyPinjam = document.getElementById('tbody-peminjaman');
+      tbodyPinjam.innerHTML = '';
+      db.peminjaman.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-corp-850/60 transition-colors";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3.5 font-bold text-emerald-400">#${p.id_peminjaman}</td>
+          <td class="py-2.5 px-3 text-slate-300">${p.id_anggota}</td>
+          <td class="py-2.5 px-3 text-slate-200 font-semibold">${p.no_rangka}</td>
+          <td class="py-2.5 px-3 text-slate-400">St ${p.id_stasiun_asal}</td>
+          <td class="py-2.5 px-3 text-slate-400">St ${p.id_stasiun_tujuan}</td>
+          <td class="py-2.5 px-3">${p.id_stasiun_alih ? `<span class="text-amber-300 font-medium">St ${p.id_stasiun_alih}</span>` : '<span class="text-slate-600">-</span>'}</td>
+          <td class="py-2.5 px-3 tabular-nums">${p.durasi_menit}m</td>
+          <td class="py-2.5 px-3 tabular-nums">${p.keterlambatan_menit > 0 ? `<span class="text-amber-300 font-medium">${p.keterlambatan_menit}m</span>` : '0m'}</td>
+          <td class="py-2.5 px-3 font-medium tabular-nums ${p.denda_rp > 0 ? 'text-rose-400' : 'text-emerald-400'}">Rp${p.denda_rp.toLocaleString('id-ID')}</td>
+          <td class="py-2.5 px-3 tabular-nums">${p.selisih_jarak_m > 0 ? `<span class="text-amber-300 font-medium">+${p.selisih_jarak_m}m</span>` : '0m'}</td>
+          <td class="py-2.5 px-3.5"><span class="px-2 py-0.5 rounded text-[9px] font-mono font-medium bg-corp-800 text-slate-300 border border-corp-border uppercase">${p.status_transaksi}</span></td>
+        `;
+        tbodyPinjam.appendChild(tr);
+      });
+      document.getElementById('count-peminjaman').innerText = db.peminjaman.length;
+
+      // 2. Sepeda
+      const tbodySepeda = document.getElementById('tbody-sepeda');
+      tbodySepeda.innerHTML = '';
+      db.sepeda.forEach(s => {
+        const st = db.stasiun.find(stn => stn.id_stasiun === s.id_stasiun_parkir);
+        let statusBadge = '';
+        if (s.status_ketersediaan === 'tersedia') {
+          statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">tersedia</span>';
+        } else if (s.status_ketersediaan === 'perbaikan') {
+          statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/10 text-rose-300 border border-rose-500/20">perbaikan</span>';
+        } else {
+          statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">dipakai</span>';
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-corp-850/60 transition-colors";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3.5 font-semibold text-white">${s.no_rangka}</td>
+          <td class="py-2.5 px-3 text-slate-300 font-sans">${s.tipe}</td>
+          <td class="py-2.5 px-3">${statusBadge}</td>
+          <td class="py-2.5 px-3">${s.id_stasiun_parkir ? `<span class="text-sky-300">ID ${s.id_stasiun_parkir}</span>` : '<span class="text-slate-500">NULL (Bengkel)</span>'}</td>
+          <td class="py-2.5 px-3.5 text-slate-400 font-sans">${st ? st.nama_stasiun : 'Di Bengkel Mekanik'}</td>
+        `;
+        tbodySepeda.appendChild(tr);
+      });
+      document.getElementById('count-sepeda').innerText = db.sepeda.length;
+
+      // 3. Stasiun
+      const tbodyStasiun = document.getElementById('tbody-stasiun');
+      tbodyStasiun.innerHTML = '';
+      db.stasiun.forEach(st => {
+        const countBikes = db.sepeda.filter(b => b.id_stasiun_parkir === st.id_stasiun).length;
+        const isFull = countBikes >= st.kapasitas_stasiun;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-corp-850/60 transition-colors";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3.5 font-semibold text-sky-400">#${st.id_stasiun}</td>
+          <td class="py-2.5 px-3 text-white font-sans font-medium">${st.nama_stasiun}</td>
+          <td class="py-2.5 px-3 text-slate-400 font-sans">${st.lokasi}</td>
+          <td class="py-2.5 px-3 text-slate-300 tabular-nums">${st.kapasitas_stasiun} slot</td>
+          <td class="py-2.5 px-3 font-semibold text-emerald-400 tabular-nums">${countBikes} unit</td>
+          <td class="py-2.5 px-3.5">
+            <span class="px-2 py-0.5 rounded text-[10px] font-medium font-sans ${isFull ? 'bg-rose-500/10 text-rose-300 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'}">
+              ${isFull ? 'Penuh (Memicu Alih)' : 'Tersedia Slot'}
+            </span>
+          </td>
+        `;
+        tbodyStasiun.appendChild(tr);
+      });
+
+      // 4. Perbaikan & Mekanik
+      const tbodyPerbaikan = document.getElementById('tbody-perbaikan');
+      tbodyPerbaikan.innerHTML = '';
+      db.perbaikan.forEach(pb => {
+        const mek = db.mekanik.find(m => m.id_mekanik === pb.id_mekanik);
+        const sup = mek ? db.supplier_ban.find(s => s.id_supplier === mek.id_supplier) : null;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-corp-850/60 transition-colors";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3.5 font-semibold text-rose-400">#${pb.id_perbaikan}</td>
+          <td class="py-2.5 px-3 text-white font-semibold">${pb.no_rangka}</td>
+          <td class="py-2.5 px-3 text-slate-300">ID ${pb.id_mekanik}</td>
+          <td class="py-2.5 px-3 text-emerald-300 font-sans">${mek ? mek.nama_mekanik : '-'}</td>
+          <td class="py-2.5 px-3 text-sky-300 font-sans">${sup ? sup.nama_supplier : '-'}</td>
+          <td class="py-2.5 px-3 text-slate-300 font-sans">${pb.deskripsi_kerusakan}</td>
+          <td class="py-2.5 px-3 text-slate-400 font-sans">${pb.tindakan}</td>
+          <td class="py-2.5 px-3.5"><span class="px-2 py-0.5 rounded text-[9px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20 uppercase">${pb.status}</span></td>
+        `;
+        tbodyPerbaikan.appendChild(tr);
+      });
+      document.getElementById('count-perbaikan').innerText = db.perbaikan.length;
+      filterCurrentTable();
+    }
+
+    function switchDbTab(tabKey) {
+      document.querySelectorAll('.db-tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.db-nav-btn').forEach(btn => {
+        btn.className = "db-nav-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer";
+      });
+
+      const target = document.getElementById('view-' + tabKey);
+      if (target) target.classList.remove('hidden');
+
+      const activeBtn = document.getElementById('db-nav-' + tabKey);
+      if (activeBtn) {
+        activeBtn.className = "db-nav-btn px-3 py-1.5 rounded-lg text-emerald-300 bg-corp-850 border border-emerald-500/30 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer";
+      }
+      filterCurrentTable();
+    }
+
+    function filterCurrentTable() {
+      const input = document.getElementById('db-search-input');
+      if (!input) return;
+      const query = input.value.trim().toLowerCase();
+      const activeTab = document.querySelector('.db-tab-content:not(.hidden)');
+      if (!activeTab) return;
+      const rows = activeTab.querySelectorAll('tbody tr');
+      rows.forEach(tr => {
+        const text = tr.innerText.toLowerCase();
+        tr.style.display = (!query || text.includes(query)) ? '' : 'none';
+      });
+    }
+
+    function copyCurrentSqlInsert() {
+      const p = db.peminjaman[0];
+      if (!p) {
+        showToast("Belum ada data transaksi!");
+        return;
+      }
+      const alihVal = p.id_stasiun_alih ? p.id_stasiun_alih : 'NULL';
+      const sql = `INSERT INTO peminjaman (id_peminjaman, id_anggota, no_rangka, id_stasiun_asal, id_stasiun_tujuan, id_stasiun_alih, durasi_menit, keterlambatan_menit, denda_rp, selisih_jarak_m, status_transaksi) VALUES (${p.id_peminjaman}, ${p.id_anggota}, '${p.no_rangka}', ${p.id_stasiun_asal}, ${p.id_stasiun_tujuan}, ${alihVal}, ${p.durasi_menit}, ${p.keterlambatan_menit}, ${p.denda_rp}, ${p.selisih_jarak_m}, '${p.status_transaksi}');`;
+
+      navigator.clipboard.writeText(sql).then(() => {
+        showToast("Query SQL INSERT berhasil disalin ke clipboard!");
+      }).catch(() => {
+        showToast("Salin manual: " + sql);
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-message');
+      const text = document.getElementById('toast-text');
+      text.innerText = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3500);
+    }
+
+    function openErdModal() {
+      document.getElementById('modal-erd').classList.remove('hidden');
+      document.getElementById('modal-erd').classList.add('flex');
+    }
+
+    function closeErdModal() {
+      document.getElementById('modal-erd').classList.add('hidden');
+      document.getElementById('modal-erd').classList.remove('flex');
+    }
+
+    function resetSimulationData() {
+      db.sepeda = [
+        { no_rangka: 'CB-ECO-001', tipe: 'City Bike Gen 1', status_ketersediaan: 'tersedia', id_stasiun_parkir: 1 },
+        { no_rangka: 'CB-ECO-002', tipe: 'City Bike Gen 1', status_ketersediaan: 'tersedia', id_stasiun_parkir: 1 },
+        { no_rangka: 'CB-PRE-009', tipe: 'Speed Bike Premium', status_ketersediaan: 'tersedia', id_stasiun_parkir: 2 },
+        { no_rangka: 'CB-ECO-015', tipe: 'City Bike Gen 2', status_ketersediaan: 'perbaikan', id_stasiun_parkir: null }
+      ];
+      db.perbaikan = [
+        { id_perbaikan: 101, no_rangka: 'CB-ECO-015', id_mekanik: 1, tgl_masuk: '2026-03-28 09:15', tgl_selesai: null, deskripsi_kerusakan: 'Ban belakang sobek & rantai kendor', tindakan: 'Ganti ban baru dari PT Swallow', status: 'proses' }
+      ];
+      populateBikeSelect();
+      updateExecutiveKpis();
+      renderDatabaseTables();
+      showToast("Data simulasi berhasil di-reset ke status default!");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      handleNimChange();
+      populateBikeSelect();
+      updateExecutiveKpis();
+      renderDatabaseTables();
+    });
+  </script>
+</body>
+</html>
